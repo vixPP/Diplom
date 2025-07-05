@@ -14,11 +14,19 @@ struct Link
 	std::string hostName;
 	std::string query;
 
+
 	bool operator==(const Link& l) const
 	{
+
 		return protocol == l.protocol
 			&& hostName == l.hostName
 			&& query == l.query;
+	}
+
+	std::string GetFullUrl() const 
+	{
+		
+		return (protocol == ProtocolType::HTTPS ? "https://" : "http://") + hostName;
 	}
 };
 

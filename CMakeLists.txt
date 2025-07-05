@@ -41,4 +41,3 @@ add_subdirectory(spider)
 
 add_subdirectory(http_server)
 
-add_subdirectory(DataBase)

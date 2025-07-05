@@ -13,18 +13,22 @@ using tcp = boost::asio::ip::tcp;
 
 
 
-std::string url_decode(const std::string& encoded) {
+std::string url_decode(const std::string& encoded) 
+{
 	std::string res;
 	std::istringstream iss(encoded);
 	char ch;
 
-	while (iss.get(ch)) {
-		if (ch == '%') {
+	while (iss.get(ch)) 
+	{
+		if (ch == '%') 
+		{
 			int hex;
 			iss >> std::hex >> hex;
 			res += static_cast<char>(hex);
 		}
-		else {
+		else 
+		{
 			res += ch;
 		}
 	}
@@ -32,7 +36,8 @@ std::string url_decode(const std::string& encoded) {
 	return res;
 }
 
-std::string convert_to_utf8(const std::string& str) {
+std::string convert_to_utf8(const std::string& str) 
+{
 	std::string url_decoded = url_decode(str);
 	return url_decoded;
 }
