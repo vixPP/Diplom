@@ -5,13 +5,23 @@
 #include <queue>
 #include <condition_variable>
 #include <pqxx/pqxx>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ini_parser.hpp>
 
 #include "indexor.h"
 #include "http_utils.h"
 #include <functional>
 #include "DB.h"
 
-
+// Глобальные переменные для конфигурации
+std::string db_host;
+int db_port;
+std::string db_name;
+std::string db_user;
+std::string db_password;
+std::string start_page;
+int recursion_depth;
+int search_port;
 
 std::mutex mtx;
 std::condition_variable cv;
@@ -19,6 +29,33 @@ std::queue<std::function<void()>> tasks;
 bool exitThreadPool = false;
 std::string html_content;
 
+void loadConfig(const std::string& filename)
+{
+	try
+	{
+		boost::property_tree::ptree pt;
+		boost::property_tree::ini_parser::read_ini(filename, pt);
+
+		db_host = pt.get<std::string>("database.host");
+		db_port = pt.get<int>("database.port");
+		db_name = pt.get<std::string>("database.dbname");
+		db_user = pt.get<std::string>("database.user");
+		db_password = pt.get<std::string>("database.password");
+		start_page = pt.get<std::string>("spider.start_page");
+		recursion_depth = pt.get<int>("spider.recursion_depth");
+		search_port = pt.get<int>("spider.search_port");
+	}
+	catch (const boost::property_tree::ini_parser::ini_parser_error& e) 
+	{
+		std::cerr << "Error parsing INI file: " << e.what() << std::endl;
+		throw; // Пробрасываем исключение дальше
+	}
+	catch (const std::exception& e) 
+	{
+		std::cerr << "General error: " << e.what() << std::endl;
+		throw; // Пробрасываем исключение дальше
+	}
+}
 
 void threadPoolWorker()
 {
@@ -53,14 +90,13 @@ void parseLink(const Link& link, int depth)
 			std::cout << "Failed to get HTML Content" << std::endl;
 			return;
 		}
-		
-		html_content = html;
 
+		html_content = html;
 
 		std::vector<Link> links =
 		{
-			{ProtocolType::HTTPS, "en.wikipedia.org", "/wiki/Wikipedia"},
-			{ProtocolType::HTTPS, "wikimediafoundation.org", "/"},
+			{start_page}
+		
 		};
 
 		if (depth > 0)
@@ -75,7 +111,8 @@ void parseLink(const Link& link, int depth)
 			}
 			cv.notify_one();
 		}
-	}catch (const std::exception& e)
+	}
+	catch (const std::exception& e)
 	{
 		std::cout << e.what() << std::endl;
 	}
@@ -85,10 +122,13 @@ void parseLink(const Link& link, int depth)
 
 int main()
 {
+
+	loadConfig("D:/HOMEWORKS/DiplomicProject/Diplom/spider/config.ini");
+
 	std::unordered_map<std::string, int> wordFrequency;
 	std::string cleanedText; // Строка для хранения очищенного текста
-	std::unordered_map<std::string, int> wordFrequency2;
-	std::string fullUrl;// Строка для хранения url
+	
+
 
 	try
 	{
@@ -100,12 +140,17 @@ int main()
 			threadPool.emplace_back(threadPoolWorker);
 		}
 
-		Link link{ ProtocolType::HTTPS, "en.wikipedia.org", "/wiki/Main_Page" };
+
+		Link link{start_page};
 		{
 			std::lock_guard<std::mutex> lock(mtx);
 			tasks.push([link]() { parseLink(link, 1); });
 			cv.notify_one();
+			std::string fullUrl = link.GetFullUrl();
+			std::cout << "Полный адрес: " << fullUrl << std::endl;
 		}
+
+		
 
 		std::this_thread::sleep_for(std::chrono::seconds(2));
 		{
@@ -140,29 +185,24 @@ int main()
 	try
 	{
 		std::string connection_string =
-		"host=localhost "
-		"port=5432 "
-		"dbname=CrawlerDB "
-		"user=postgres "
-		"password=89617479237k";
+			"host=" + db_host + " "
+			"port=" + std::to_string(db_port) + " "
+			"dbname=" + db_name + " "
+			"user=" + db_user + " "
+			"password=" + db_password;
 
 		DataBaseSearcher DBS(connection_string);
 
-		Link link{ ProtocolType::HTTPS, "en.wikipedia.org", "/wiki/Main_Page" };
+		Link link{start_page};
 		std::string fullUrl = link.GetFullUrl();
 
 		DBS.CreateTables();
 		DBS.AddWordsDB(fullUrl, wordFrequency);
-
 	}
-
-	catch (pqxx::sql_error& e)
-	{
+	catch (pqxx::sql_error& e) {
 		std::cout << e.what() << std::endl;
 	}
 
 	return 0;
 
 }
-
-

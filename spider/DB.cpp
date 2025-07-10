@@ -63,33 +63,49 @@ void DataBaseSearcher::CreateTables() // создание таблиц
 
 int DataBaseSearcher::InsertDocument(pqxx::work& transaction, const std::string& title) 
 {
-    try 
+    try
     {
+        // Проверяем, существует ли документ с таким названием
+        pqxx::result checkRes = transaction.exec("SELECT COUNT(*) FROM Documents WHERE title = " + transaction.quote(title));
+        if (checkRes[0][0].as<int>() > 0)
+        {
+            std::cout << "Данный адрес уже создан" << std::endl;
+            return -1; // Возвращаем -1, если документ уже существует
+        }
+
+        // Вставляем новый документ
         transaction.exec0("INSERT INTO Documents (title) VALUES (" + transaction.quote(title) + ")");
         // Получаем id последнего вставленного документа
         pqxx::result res = transaction.exec("SELECT currval(pg_get_serial_sequence('Documents', 'id'))");
+        std::cout << "Добавление документа прошло успешно!" << std::endl;
         return res[0][0].as<int>();
-        std::cout << std::endl << "Добавление документа прошло успешно!";
     }
-    catch (const std::exception& e) 
+    catch (const std::exception& e)
     {
         std::cerr << "Ошибка при вставке документа: " << e.what() << std::endl;
         return -1; // Возвращаем -1 в случае ошибки
     }
 }
 
-int DataBaseSearcher::InsertWord(pqxx::work& transaction, const std::string& word) 
+int DataBaseSearcher::InsertWord(pqxx::work& transaction, const std::string& word)
 {
-    try 
+    try
     {
+        // Проверяем, существует ли слово
+        pqxx::result checkRes = transaction.exec("SELECT id FROM Words WHERE word = " + transaction.quote(word));
+        if (!checkRes.empty())
+        {
+            // Если слово уже существует, возвращаем его id
+            return checkRes[0][0].as<int>();
+        }
+
+        // Вставляем новое слово
         transaction.exec0("INSERT INTO Words (word) VALUES (" + transaction.quote(word) + ")");
         // Получаем id последнего вставленного слова
         pqxx::result res = transaction.exec("SELECT currval(pg_get_serial_sequence('Words', 'id'))");
         return res[0][0].as<int>();
-        std::cout << std::endl << "Добавление слов прошло успешно!";
-
     }
-    catch (const std::exception& e) 
+    catch (const std::exception& e)
     {
         std::cerr << "Ошибка при вставке слова: " << e.what() << std::endl;
         return -1; // Возвращаем -1 в случае ошибки

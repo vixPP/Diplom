@@ -1,8 +1,6 @@
 #include "indexor.h"
 
 
-
-
 void cleanText(std::string& html_content)
 {
     // Удаляем HTML-теги

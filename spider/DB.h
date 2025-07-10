@@ -20,5 +20,4 @@ public:
     void CreateTables();
     void AddWordsDB(const std::string& docTitle, const std::unordered_map<std::string, int>& wordFrequency);
 
-
 };

@@ -151,6 +151,8 @@ std::string getHtmlContent(const Link& link)
 		std::cout << e.what() << std::endl;
 	}
 
+	
+
 	return result;
 }
 
