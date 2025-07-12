@@ -4,7 +4,7 @@
 DataBaseSearcher::DataBaseSearcher(const std::string& connection)
     : connection_(new pqxx::connection(connection))
 {
-    std::cout << "Подключение к базе данных установлено!" << std::endl;
+    std::cout << "Подключение к базе данных установлено!" << std::endl << std::endl;
 
     pqxx::work t(*connection_);
 
@@ -51,7 +51,7 @@ void DataBaseSearcher::CreateTables() // создание таблиц
         }
 
         t.commit(); // Зафиксировать изменения
-        std::cout << "Таблицы готовы!" << std::endl;
+        std::cout << "Таблицы готовы!" << std::endl <<std::endl;
     }
     catch (const std::exception& e)
     {
@@ -69,7 +69,7 @@ int DataBaseSearcher::InsertDocument(pqxx::work& transaction, const std::string&
         pqxx::result checkRes = transaction.exec("SELECT COUNT(*) FROM Documents WHERE title = " + transaction.quote(title));
         if (checkRes[0][0].as<int>() > 0)
         {
-            std::cout << "Данный адрес уже создан" << std::endl;
+            std::cout <<"Данный адрес уже существует!!!" << std::endl;
             return -1; // Возвращаем -1, если документ уже существует
         }
 

@@ -48,12 +48,12 @@ void loadConfig(const std::string& filename)
 	catch (const boost::property_tree::ini_parser::ini_parser_error& e) 
 	{
 		std::cerr << "Error parsing INI file: " << e.what() << std::endl;
-		throw; // Пробрасываем исключение дальше
+		throw; 
 	}
 	catch (const std::exception& e) 
 	{
 		std::cerr << "General error: " << e.what() << std::endl;
-		throw; // Пробрасываем исключение дальше
+		throw; 
 	}
 }
 
@@ -146,8 +146,6 @@ int main()
 			std::lock_guard<std::mutex> lock(mtx);
 			tasks.push([link]() { parseLink(link, 1); });
 			cv.notify_one();
-			std::string fullUrl = link.GetFullUrl();
-			std::cout << "Полный адрес: " << fullUrl << std::endl;
 		}
 
 		
@@ -197,9 +195,14 @@ int main()
 		std::string fullUrl = link.GetFullUrl();
 
 		DBS.CreateTables();
+		std::cout << "Адрес: " << fullUrl << std::endl << std::endl;
+		std::cout << "Результат: ";
+
 		DBS.AddWordsDB(fullUrl, wordFrequency);
+		
 	}
-	catch (pqxx::sql_error& e) {
+	catch (pqxx::sql_error& e) 
+	{
 		std::cout << e.what() << std::endl;
 	}
 
