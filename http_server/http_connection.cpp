@@ -5,6 +5,8 @@
 #include <codecvt>
 #include <iostream>
 
+#include "parser_config.h"
+
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -27,17 +29,22 @@ std::vector<std::pair<int, std::string>> HttpConnection::searchDatabase(const st
 
     try
     {
-        pqxx::connection C("dbname=CrawlerDB user=postgres password=89617479237k");
+        Config config = loadConfig("D:/HOMEWORKS/DiplomicProject/Diplom/config.ini");
+
+        std::string connection_string =
+            "dbname=" + config.db_name + " "
+            "user=" + config.db_user + " "
+            "password=" + config.db_password;
+
+        pqxx::connection C(connection_string);
         pqxx::work W(C);
 
-        // Начинаем формировать SQL-запрос
         std::string query = "SELECT d.id, d.title, SUM(dw.frequency) AS relevance "
             "FROM documentwords dw "
             "JOIN words w ON dw.word_id = w.id "
             "JOIN documents d ON dw.document_id = d.id "
             "WHERE w.word IN (";
 
-        // Добавляем слова к запросу
         for (size_t i = 0; i < keywords.size(); ++i)
         {
             query += "'" + W.esc(keywords[i]) + "'";
@@ -49,9 +56,11 @@ std::vector<std::pair<int, std::string>> HttpConnection::searchDatabase(const st
 
         query += ") "
             "GROUP BY d.id, d.title "
-            "HAVING COUNT(DISTINCT w.id) = " + std::to_string(keywords.size()) + " "
+            "HAVING COUNT(DISTINCT w.id) >= 1 " // Изменено на >= 1, чтобы находить документы с любым из ключевых слов
             "ORDER BY relevance DESC "
             "LIMIT 10;";
+
+        std::cout << "Executing query: " << query << std::endl; // Отладочная печать
 
         // Выполняем запрос
         pqxx::result R = W.exec(query);
@@ -65,7 +74,7 @@ std::vector<std::pair<int, std::string>> HttpConnection::searchDatabase(const st
     }
     catch (const std::exception& e)
     {
-        std::cerr << e.what() << std::endl;
+        std::cerr << std::endl << "Проверьте данные подключения к базе!!! " << std::endl << e.what() << std::endl;
     }
 
     return results;
@@ -184,19 +193,20 @@ void HttpConnection::createResponsePost()
             return;
         }
 
-        // Преобразование запроса в вектор слов
         std::vector<std::string> keywords;
         std::istringstream iss(value);
         std::string word;
+
+        // Извлечение слов из строки, игнорируя лишние пробелы
         while (iss >> word)
         {
-            if (keywords.size() < 4)
-            { // Ограничение на 4 слова
+            if (keywords.size() < 4) // Ограничение на количество ключевых слов
+            {
                 keywords.push_back(word);
             }
         }
 
-        // Получение результатов из базы данных
+        // Теперь передаем ключевые слова в базу данных
         auto searchResult = searchDatabase(keywords);
 
         response_.set(http::field::content_type, "text/html");

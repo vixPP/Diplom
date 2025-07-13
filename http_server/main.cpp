@@ -8,6 +8,10 @@
 #include "http_connection.h"
 #include <Windows.h>
 
+#include "parser_config.h"
+
+
+
 void httpServer(tcp::acceptor& acceptor, tcp::socket& socket)
 {
     acceptor.async_accept(socket,
@@ -21,13 +25,16 @@ void httpServer(tcp::acceptor& acceptor, tcp::socket& socket)
 
 int main(int argc, char* argv[])
 {
+    Config config = loadConfig("D:/HOMEWORKS/DiplomicProject/Diplom/config.ini");
+
     SetConsoleCP(CP_UTF8);
     SetConsoleOutputCP(CP_UTF8);
+    
 
     try
     {
         auto const address = net::ip::make_address("0.0.0.0");
-        unsigned short port = 9090;
+        unsigned short port = config.search_port;
 
         net::io_context ioc{ 1 };
 
@@ -35,7 +42,7 @@ int main(int argc, char* argv[])
         tcp::socket socket{ ioc };
         httpServer(acceptor, socket);
 
-        std::cout << "Open browser and connect to http://localhost:9090 to see the web server operating" << std::endl;
+        std::cout << "Open browser and connect to http://localhost:" << port << " to see the web server operating" << std::endl;
 
         ioc.run();
     }

@@ -28,7 +28,7 @@ protected:
     void checkDeadline();
     std::vector<std::pair<int, std::string>> searchDatabase(const std::vector<std::string>& keywords);
     std::string buffers_to_string(const beast::multi_buffer::const_buffers_type& buffers);
-    
+
 public:
     HttpConnection(tcp::socket socket);
     void start();

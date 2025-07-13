@@ -7,6 +7,7 @@
 #include <pqxx/pqxx>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
+#include <regex>
 
 #include "indexor.h"
 #include "http_utils.h"
@@ -21,7 +22,6 @@ std::string db_user;
 std::string db_password;
 std::string start_page;
 int recursion_depth;
-int search_port;
 
 std::mutex mtx;
 std::condition_variable cv;
@@ -43,7 +43,6 @@ void loadConfig(const std::string& filename)
 		db_password = pt.get<std::string>("database.password");
 		start_page = pt.get<std::string>("spider.start_page");
 		recursion_depth = pt.get<int>("spider.recursion_depth");
-		search_port = pt.get<int>("spider.search_port");
 	}
 	catch (const boost::property_tree::ini_parser::ini_parser_error& e) 
 	{
@@ -96,7 +95,7 @@ void parseLink(const Link& link, int depth)
 		std::vector<Link> links =
 		{
 			{start_page}
-		
+
 		};
 
 		if (depth > 0)
@@ -119,11 +118,10 @@ void parseLink(const Link& link, int depth)
 }
 
 
-
 int main()
 {
 
-	loadConfig("D:/HOMEWORKS/DiplomicProject/Diplom/spider/config.ini");
+	loadConfig("D:/HOMEWORKS/DiplomicProject/Diplom/config.ini");
 
 	std::unordered_map<std::string, int> wordFrequency;
 	std::string cleanedText; // Строка для хранения очищенного текста

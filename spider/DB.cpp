@@ -1,17 +1,12 @@
 #include "DB.h"
 
-
-DataBaseSearcher::DataBaseSearcher(const std::string& connection)
-    : connection_(new pqxx::connection(connection))
+DataBaseSearcher::DataBaseSearcher(const std::string& connection) : connection_(new pqxx::connection(connection))
 {
     std::cout << "Подключение к базе данных установлено!" << std::endl << std::endl;
 
     pqxx::work t(*connection_);
 
 }
-
-
-
 
 void DataBaseSearcher::CreateTables() // создание таблиц
 {
@@ -36,7 +31,7 @@ void DataBaseSearcher::CreateTables() // создание таблиц
         if (t.exec("SELECT to_regclass('public.Words');")[0][0].is_null()) {
             t.exec("CREATE TABLE Words ("
                 "id SERIAL PRIMARY KEY, "
-                "word TEXT NOT NULL UNIQUE);"); // Добавлено UNIQUE
+                "word TEXT NOT NULL UNIQUE);"); 
         }
 
         
@@ -56,26 +51,25 @@ void DataBaseSearcher::CreateTables() // создание таблиц
     catch (const std::exception& e)
     {
         last_error = "Ошибка при создании таблиц: " + std::string(e.what());
-        std::cerr << last_error << std::endl; // Выводим ошибку
+        std::cerr << last_error << std::endl; 
     }
-    
 }
 
 int DataBaseSearcher::InsertDocument(pqxx::work& transaction, const std::string& title) 
 {
     try
     {
-        // Проверяем, существует ли документ с таким названием
+       
         pqxx::result checkRes = transaction.exec("SELECT COUNT(*) FROM Documents WHERE title = " + transaction.quote(title));
         if (checkRes[0][0].as<int>() > 0)
         {
             std::cout <<"Данный адрес уже существует!!!" << std::endl;
-            return -1; // Возвращаем -1, если документ уже существует
+            return -1; 
         }
 
-        // Вставляем новый документ
+     
         transaction.exec0("INSERT INTO Documents (title) VALUES (" + transaction.quote(title) + ")");
-        // Получаем id последнего вставленного документа
+        
         pqxx::result res = transaction.exec("SELECT currval(pg_get_serial_sequence('Documents', 'id'))");
         std::cout << "Добавление документа прошло успешно!" << std::endl;
         return res[0][0].as<int>();
@@ -83,7 +77,7 @@ int DataBaseSearcher::InsertDocument(pqxx::work& transaction, const std::string&
     catch (const std::exception& e)
     {
         std::cerr << "Ошибка при вставке документа: " << e.what() << std::endl;
-        return -1; // Возвращаем -1 в случае ошибки
+        return -1;
     }
 }
 
@@ -95,13 +89,12 @@ int DataBaseSearcher::InsertWord(pqxx::work& transaction, const std::string& wor
         pqxx::result checkRes = transaction.exec("SELECT id FROM Words WHERE word = " + transaction.quote(word));
         if (!checkRes.empty())
         {
-            // Если слово уже существует, возвращаем его id
             return checkRes[0][0].as<int>();
         }
 
-        // Вставляем новое слово
+        
         transaction.exec0("INSERT INTO Words (word) VALUES (" + transaction.quote(word) + ")");
-        // Получаем id последнего вставленного слова
+
         pqxx::result res = transaction.exec("SELECT currval(pg_get_serial_sequence('Words', 'id'))");
         return res[0][0].as<int>();
     }
@@ -116,11 +109,11 @@ int DataBaseSearcher::InsertWord(pqxx::work& transaction, const std::string& wor
 
 void DataBaseSearcher::AddWordsDB(const std::string& docTitle, const std::unordered_map<std::string, int>& wordFrequency) 
 {
-    pqxx::work transaction(*connection_); // Создаем транзакцию здесь
+    pqxx::work transaction(*connection_); 
     int documentId = InsertDocument(transaction, docTitle);
     if (documentId == -1) 
     {
-        return; // Если не удалось вставить документ, выходим
+        return; 
     }
 
     for (const auto& pair : wordFrequency) 
@@ -131,7 +124,7 @@ void DataBaseSearcher::AddWordsDB(const std::string& docTitle, const std::unorde
         int wordId = InsertWord(transaction, word);
         if (wordId != -1) 
         {
-            // Вставляем частоту слова в таблицу DocumentWords
+           
             try 
             {
                 transaction.exec0("INSERT INTO DocumentWords (document_id, word_id, frequency) VALUES (" +
@@ -144,7 +137,7 @@ void DataBaseSearcher::AddWordsDB(const std::string& docTitle, const std::unorde
         }
     }
 
-    transaction.commit(); // Зафиксировать изменения в конце
+    transaction.commit(); 
 }
 
 

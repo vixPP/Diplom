@@ -10,8 +10,7 @@ add_executable(SpiderApp
 	indexor.cpp
 	DB.h
 	DB.cpp
-	
-	)
+  )
 
 target_compile_features(SpiderApp PRIVATE cxx_std_17) 
 
